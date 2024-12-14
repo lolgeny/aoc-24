@@ -1,0 +1,2 @@
+[build]
+rustflags = ["-Ctarget-cpu=native", "-L/opt/homebrew/lib"]

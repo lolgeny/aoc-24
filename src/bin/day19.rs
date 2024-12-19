@@ -3,15 +3,20 @@
 
 #[cfg(test)] extern crate test;
 
+use std::{array, collections::HashMap};
 
 use aoc24::load_input;
 use itertools::Itertools;
+use smallvec::SmallVec;
 
-fn possible(design: &str, pats: &[&str]) -> bool {
+
+const BUCKET_SIZE: usize = 16;
+
+fn possible(design: &[u8], buckets: &[SmallVec<[&[u8]; BUCKET_SIZE]>; 26]) -> bool {
     let mut possibilities = vec![false; design.len()+1];
     possibilities[design.len()] = true;
     'possibilities: for i in (0..design.len()).rev() {
-        for &p in pats {
+        for &p in &buckets[(design[i]-'a' as u8) as usize] {
             if i+p.len() > design.len() {continue};
             if &design[i..i+p.len()] == p && possibilities[i+p.len()] {
                 possibilities[i] = true;
@@ -24,18 +29,22 @@ fn possible(design: &str, pats: &[&str]) -> bool {
 
 fn part1(inp: &str) -> usize {
     let (pats, designs) = inp.split("\n\n").collect_tuple().unwrap();
-    let pats = pats.split(", ").map(|x: &str| x).collect_vec();
+    let pats = pats.split(", ").map(|x| x.as_bytes()).collect_vec();
+    let mut buckets: [SmallVec<[&[u8]; BUCKET_SIZE]>; 26] = array::from_fn(|_| SmallVec::new());
+    for p in pats {
+        buckets[(p[0]-'a' as u8) as usize].push(p);
+    }
     designs.lines()
-        .filter(|&d| possible(d, &pats))
+        .filter(|&d| possible(d.as_bytes(), &buckets))
         .count()
 }
 
-fn possible2(design: &str, pats: &[&str]) -> u64 {
+fn possible2(design: &[u8], buckets: &[SmallVec<[&[u8]; BUCKET_SIZE]>; 26]) -> u64 {
     let mut possibilities = vec![0; design.len()+1];
     possibilities[design.len()] = 1;
     for i in (0..design.len()).rev() {
         let mut total = 0;
-        for &p in pats {
+        for &p in &buckets[(design[i]-'a' as u8) as usize] {
             if i+p.len() > design.len() {continue};
             if &design[i..i+p.len()] == p {
                 total += possibilities[i+p.len()];
@@ -48,9 +57,13 @@ fn possible2(design: &str, pats: &[&str]) -> u64 {
 
 fn part2(inp: &str) -> u64 {
     let (pats, designs) = inp.split("\n\n").collect_tuple().unwrap();
-    let pats = pats.split(", ").map(|x| x).collect_vec();
+    let pats = pats.split(", ").map(|x| x.as_bytes()).collect_vec();
+    let mut buckets: [SmallVec<[&[u8]; BUCKET_SIZE]>; 26] = array::from_fn(|_| SmallVec::new());
+    for p in pats {
+        buckets[(p[0]-'a' as u8) as usize].push(p);
+    }
     designs.lines()
-        .map(|ref d| possible2(d, &pats))
+        .map(|d| possible2(d.as_bytes(), &buckets))
         .sum::<u64>()
 }
 

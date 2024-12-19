@@ -7,10 +7,13 @@ use std::{array, collections::HashMap};
 
 use aoc24::load_input;
 use itertools::Itertools;
+use mimalloc::MiMalloc;
 use smallvec::SmallVec;
 
+#[global_allocator]
+static ALLOCATOR: MiMalloc = MiMalloc;
 
-const BUCKET_SIZE: usize = 16;
+const BUCKET_SIZE: usize = 8;
 
 fn possible(design: &[u8], buckets: &[SmallVec<[&[u8]; BUCKET_SIZE]>; 26]) -> bool {
     let mut possibilities = vec![false; design.len()+1];
@@ -40,13 +43,15 @@ fn part1(inp: &str) -> usize {
 }
 
 fn possible2(design: &[u8], buckets: &[SmallVec<[&[u8]; BUCKET_SIZE]>; 26]) -> u64 {
-    let mut possibilities = vec![0; design.len()+1];
+    let d_len = design.len();
+    let mut possibilities = vec![0; d_len+1];
     possibilities[design.len()] = 1;
-    for i in (0..design.len()).rev() {
+    for i in (0..d_len).rev() {
         let mut total = 0;
         for &p in &buckets[(design[i]-'a' as u8) as usize] {
-            if i+p.len() > design.len() {continue};
-            if &design[i..i+p.len()] == p {
+            let j = i+p.len();
+            if j > d_len {continue};
+            if &design[i..j] == p {
                 total += possibilities[i+p.len()];
             }
         }
@@ -99,5 +104,5 @@ mod tests {
 
 fn main() {
     let inp = load_input("day19");
-    println!("{}", part1(&inp));
+    println!("{}", part2(&inp));
 }

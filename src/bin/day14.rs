@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::{collections::HashSet, io::stdin, ops::Range};
 
 use aoc24::load_input;

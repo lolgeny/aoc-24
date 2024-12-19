@@ -1,3 +1,4 @@
+#![allow(unused)]
 use std::{collections::{BinaryHeap, HashMap, HashSet}, fmt::Display};
 
 use aoc24::load_input;

@@ -1,3 +1,4 @@
+#![allow(unused)]
 use aoc24::load_input;
 use itertools::Itertools;
 

@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use aoc24::load_input;
 use good_lp::{coin_cbc, constraint::eq, variables, Solution, SolverModel};
 use itertools::Itertools;

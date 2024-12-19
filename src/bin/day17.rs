@@ -1,3 +1,4 @@
+#![allow(unused)]
 #![feature(int_roundings)]
 
 use std::fmt::Display;

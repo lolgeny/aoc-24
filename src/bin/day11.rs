@@ -1,3 +1,4 @@
+#![allow(unused)]
 #![feature(let_chains)]
 
 use std::collections::HashMap;

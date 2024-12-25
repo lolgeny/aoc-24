@@ -77,7 +77,7 @@ fn part1(inp: &str) -> impl Display {
         let (mut x, mut y) = (n.x, n.y);
         let mut dfwd = 0;
         while grid[y][x] != '#' {
-            if grid[y][x] == 'E' {continue 'search};
+            if (x,y)==(ex,ey) {return 1000*n.turns + n.fwd + dfwd};
             for &(dx, dy) in &others {
                 let x2 = x as isize + dx;
                 let y2 = y as isize + dy;
@@ -89,100 +89,123 @@ fn part1(inp: &str) -> impl Display {
 
             let x2 = (x as isize+n.dx) as usize; let y2 = (y as isize+n.dy) as usize;
             if visited.contains_key(&(x2, y2)) {break};
-            if x2 == ex - 1 && y2 == ey {
-                println!("{}", n.fwd+dfwd+1);
-            }
             visited.insert((x2, y2), (n.fwd+dfwd+1, n.turns, n.dx, n.dy));
             x = x2; y = y2; dfwd += 1;
         }
     }
-    let distances = visited; // remove mutability
-    let (e_fwd, e_turns, ..) = *distances.get(&(ex, ey)).unwrap();
+    panic!("No path")
+}
 
-    let mut valid = HashSet::new();
-    for (x0, y0) in (0..x_len).cartesian_product(0..y_len) {
-        if grid[y0][x0] == '#' {continue};
-
+fn part2(inp: &str) -> impl Display {
+    const DXY: [(isize, isize); 4] = [(-1,0),(1,0),(0,1),(0,-1)];
+    let grid = inp.lines().map(|x| x.chars().collect_vec()).collect_vec();
+    let x_len = grid[0].len(); let y_len = grid.len();
+    let (sx, sy) = (1, y_len-2);
+    let (ex, ey) = (x_len-2, 1);
+    
+    fn search(grid: &[Vec<char>], x_len: usize, y_len: usize, sx: usize, sy: usize, ex: usize, ey: usize) -> HashMap<(usize, usize, isize, isize), (u64, u64)> {
         let mut queue = BinaryHeap::new();
         let mut visited = HashMap::new();
-        let d0 = *distances.get(&(x0, y0)).unwrap();
-        visited.insert((x0, y0), d0);
+        visited.insert((sx, sy, 1, 0), (0, 0));
         queue.extend([
-            Node { fwd: d0.0, turns: d0.1, x: x0, y: y0, dx: d0.2, dy: d0.3 }
+            Node { fwd: 0, turns: 0, x: sx, y: sy, dx: 1, dy: 0 }
         ]);
         'search: while let Some(n) = queue.pop() {
-            if !visited.contains_key(&(n.x, n.y)) {
-                visited.insert((n.x, n.y), (n.fwd, n.turns, n.dx, n.dy));
+            if !visited.contains_key(&(n.x, n.y, n.dx, n.dy)) {
+                visited.insert((n.x, n.y, n.dx, n.dy), (n.fwd, n.turns));
+            }
+            for (dx, dy) in DXY {
+                if (dx, dy) == (n.dx, n.dy) {continue};
+                if !visited.contains_key(&(n.x,n.y,dx,dy)) {
+                    queue.push(Node { fwd: n.fwd, turns: n.turns+1, x: n.x, y: n.y, dx, dy });
+                }
             }
     
-            let others = [(-1,0),(1,0),(0,1),(0,-1)].into_iter().filter(|&(dx, dy)| {
+            let others = DXY.into_iter().filter(|&(dx, dy)| {
                 if dx == -n.dx && dy == -n.dy {return false};
                 dx != n.dx && dy != n.dy
             }).collect_vec();
             let (mut x, mut y) = (n.x, n.y);
             let mut dfwd = 0;
             while grid[y][x] != '#' {
-                if grid[y][x] == 'E' {break 'search};
+                if (x, y) == (ex, ey) {continue 'search};
                 for &(dx, dy) in &others {
                     let x2 = x as isize + dx;
                     let y2 = y as isize + dy;
                     if x2 < 0 || y2 < 0 || x2 as usize >= x_len || y2 as usize >= y_len {continue};
-                    if !visited.contains_key(&(x2 as usize,y2 as usize)) && grid[y2 as usize][x2 as usize] != '#' {
+                    if !visited.contains_key(&(x2 as usize,y2 as usize,dx,dy)) && grid[y2 as usize][x2 as usize] != '#' {
                         queue.push(Node {fwd: n.fwd + dfwd + 1, turns: n.turns + 1, x: x2 as usize, y: y2 as usize, dx, dy});
                     }
                 }
     
                 let x2 = (x as isize+n.dx) as usize; let y2 = (y as isize+n.dy) as usize;
-                if visited.contains_key(&(x2, y2)) {break};
-                // if x2 == ex - 1 && y2 == ey {
-                    // println!("{}", n.fwd+dfwd+1);
-                // }
-                visited.insert((x2, y2), (n.fwd+dfwd+1, n.turns, n.dx, n.dy));
+                if visited.contains_key(&(x2, y2, n.dx, n.dy)) {break};
+                visited.insert((x2, y2, n.dx, n.dy), (n.fwd+dfwd+1, n.turns));
                 x = x2; y = y2; dfwd += 1;
             }
         }
-        if let Some(&(fwd, turns, ..)) = visited.get(&(ex, ey)) {
-            if (fwd, turns) == (e_fwd, e_turns) {
-                valid.insert((x0,y0));
+        visited
+    }
+    let distances1 = search(&grid, x_len, y_len, sx, sy, ex, ey);
+    let distances2 = search(&grid, x_len, y_len, ex, ey, sx, sy);
+
+    let (opt_fwd, opt_turns) = *DXY.into_iter().filter_map(|(dx, dy)| distances1.get(&(ex,ey,dx,dy))).min().unwrap();
+
+    // for y in 0..y_len {
+    //     for x in 0..x_len {
+    //         if grid[y][x] == '#' {print!("## ");}
+    //         else if let Some(d) = distances1.get(&(x,y)) {
+    //             print!("{:02} ", d.0);
+    //         } else {
+    //             print!(".  ");
+    //         }
+    //     }
+    //     println!();
+    // }
+    // println!("\n");
+    // for y in 0..y_len {
+    //     for x in 0..x_len {
+    //         if grid[y][x] == '#' {print!("## ");}
+    //         else if let Some(d) = distances2.get(&(x,y)) {
+    //             print!("{:02} ", d.0);
+    //         } else {
+    //             print!(".  ");
+    //         }
+    //     }
+    //     println!();
+    // }
+    println!("\n");
+    for y in 0..y_len {
+        'coords: for x in 0..x_len {
+            if grid[y][x] == '#' {print!("#"); continue}
+            for (dx, dy) in DXY {
+                if let Some(&(a,b)) = distances1.get(&(x,y,dx,dy)) {
+                    if let Some(&(c,d)) = distances2.get(&(x,y,dx,dy)) {
+                        if a+c == opt_fwd && b+d <= opt_turns {print!("O"); continue 'coords;}
+                    }
+                }
             }
-        }
-    }
-
-
-    for y in 0..y_len {
-        for x in 0..x_len {
-            if grid[y][x] == '#' {print!("## ")}
-            // else if valid.contains(&(x,y)) {print!("O")}
-            // else {print!(".");}
-            else {print!("{:02} ", distances.get(&(x,y)).copied().unwrap_or((99,99,0,0)).0)}
-        }
-        println!();
-    }
-    println!("\n\n");
-    for y in 0..y_len {
-        for x in 0..x_len {
-            if grid[y][x] == '#' {print!("## ")}
-            // else if valid.contains(&(x,y)) {print!("O")}
-            // else {print!(".");}
-            else {print!("{:02} ", distances.get(&(x,y)).copied().unwrap_or((99,99,0,0)).1)}
+            print!(".");
         }
         println!();
     }
 
-    for y in 0..y_len {
-        for x in 0..x_len {
-            if grid[y][x] == '#' {print!("#")}
-            else if valid.contains(&(x,y)) {print!("O")}
-            else {print!(".");}
-            // else {print!("{:02} ", visited.get(&(x,y)).copied().unwrap_or((99,99)).0)}
-        }
-        println!();
-    }
-    valid.len()
+    // (0..x_len).cartesian_product(0..y_len).filter(|&(x,y)| {
+    //     let (a, b) = match distances1.get(&(x,y)) {
+    //         Some(x) => *x,
+    //         None => {return false}
+    //     };
+    //     let (c, d) = match distances2.get(&(x,y)) {
+    //         Some(x) => *x,
+    //         None => {return false}
+    //     };
+    //     a+c == opt_fwd && b+d <= opt_turns+1
+    // }).count()
+    0
 }
 
 fn main() {
     let inp = load_input("day16");
-    println!("{}", part1(&inp));
+    println!("{}", part2(&inp));
 }
 // > 401

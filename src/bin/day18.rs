@@ -1,8 +1,12 @@
+#![cfg_attr(test, feature(test))]
 #![allow(unused)]
 
-use std::{cmp::Reverse, collections::{BinaryHeap, HashMap, HashSet}, fmt::Display};
+#[cfg(test)] extern crate test;
+
+use std::{cmp::Reverse, collections::BinaryHeap, fmt::Display};
 
 use aoc24::load_input;
+use hashbrown::{HashMap, HashSet};
 use itertools::Itertools;
 use partitions::{partition_vec, PartitionVec};
 
@@ -37,7 +41,7 @@ fn part2(inp: &str) -> impl Display {
         .collect_tuple().unwrap()
     ).collect_vec();
     let mut i = 0;
-;
+
     let mut obstacles = PartitionVec::with_capacity(obstacles_generator.len()+2);
     obstacles.push((-1,0));
     obstacles.push((0,-1));
@@ -57,6 +61,32 @@ fn part2(inp: &str) -> impl Display {
         obst_indices.insert(obstacle, i);
     }
     panic!("Problem not solvable")
+}
+
+#[cfg(test)]
+mod tests {
+    use aoc24::load_input;
+    use test::Bencher;
+    use crate::*;
+
+    #[test]
+    fn text_day18() {
+        let inp = load_input("day18");
+        assert_eq!(format!("{}", part1(&inp)), "320");
+        assert_eq!(format!("{}", part2(&inp)), "34,40");
+    }
+
+    #[bench]
+    fn bench_day18_part1(b: &mut Bencher) {
+        let inp = load_input("day18");
+        b.iter(|| part1(&inp));
+    }
+
+    #[bench]
+    fn bench_day18_part2(b: &mut Bencher) {
+        let inp = load_input("day18");
+        b.iter(|| part2(&inp));
+    }
 }
 
 fn main() {

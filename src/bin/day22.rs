@@ -1,7 +1,8 @@
 #![feature(iter_map_windows)]
-use std::{fmt::Display, iter::once};
+use std::fmt::Display;
 
 use aoc24::load_input;
+use hashbrown::{HashMap, HashSet};
 use itertools::Itertools;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 
@@ -39,16 +40,18 @@ fn part2(inp: &str) -> impl Display {
             prices.push(i2 % 10);
             i = i2;
         }
-        (prices, diffs)
+        let diff_lookup: HashMap<(i64, i64, i64, i64), i64> = diffs.windows(4).enumerate().map(|(i, w)| {
+            ((w[0], w[1], w[2], w[3]), prices[i+4])
+        }).rev().collect();
+        diff_lookup
     }).collect_vec();
-    // println!("{buyers:?}");
-    once(-9..=9).cycle().take(4).multi_cartesian_product().par_bridge().map(|x| (x[0], x[1], x[2], x[3]))
-    .map(|(a, b, c, d)| {
+
+    buyers.iter().map(|x| x.keys()).flatten().collect::<HashSet<_>>().into_iter()
+    .par_bridge()
+    .map(|&(a, b, c, d)| {
         buyers.iter().map(
-            |(prices, diffs)| diffs.iter().map_windows(|[i, j, k, l]|
-                (**i, **j, **k, **l)
-            ).enumerate().filter(|&(_, t)| t == (a, b, c, d))
-            .next().map(|(i, _)| prices[i+4]).unwrap_or(0)
+            |diffs|
+                diffs.get(&(a,b,c,d)).copied().unwrap_or(0)
         ).sum::<i64>()
     }).max().unwrap()
 }
